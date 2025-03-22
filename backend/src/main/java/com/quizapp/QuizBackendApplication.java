@@ -1,4 +1,4 @@
-package com.quiz.backend;
+package com.quizapp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
