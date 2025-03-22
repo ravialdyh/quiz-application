@@ -1,6 +1,5 @@
 package com.quizapp.service;
 
-import com.quizapp.model.dto.QuizAttemptDto;
 import com.quizapp.model.dto.UserResponseDto;
 import com.quizapp.model.entity.QuizAttempt;
 

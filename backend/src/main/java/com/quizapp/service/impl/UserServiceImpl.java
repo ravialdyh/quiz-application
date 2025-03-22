@@ -4,15 +4,14 @@ import com.quizapp.exception.ResourceNotFoundException;
 import com.quizapp.model.dto.UserDto;
 import com.quizapp.model.entity.Role;
 import com.quizapp.model.entity.User;
-import com.quizapp.repository.RoleRepository;
 import com.quizapp.repository.UserRepository;
+import com.quizapp.service.RoleService;
 import com.quizapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -20,16 +19,16 @@ import java.util.Set;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UserServiceImpl(
             UserRepository userRepository,
-            RoleRepository roleRepository,
+            RoleService roleService,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.roleService = roleService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -44,17 +43,13 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Email is already in use");
         }
 
-        
         User user = new User();
         user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        
-        Set<Role> roles = new HashSet<>();
-        Role studentRole = roleRepository.findByName("ROLE_STUDENT")
-                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
-        roles.add(studentRole);
+        // Assign roles based on the DTO or default roles if none specified
+        Set<Role> roles = roleService.getRolesByNames(userDto.getRoles());
         user.setRoles(roles);
 
         return userRepository.save(user);

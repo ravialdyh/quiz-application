@@ -4,6 +4,7 @@ import com.quizapp.security.jwt.AuthEntryPointJwt;
 import com.quizapp.security.jwt.AuthTokenFilter;
 import com.quizapp.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,11 +23,19 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
+    
+    @Value("${quizapp.cors.allowedOrigins:http://localhost:3000}")
+    private List<String> allowedOrigins;
+    
+    @Value("${quizapp.security.permit-test-endpoints:false}")
+    private boolean permitTestEndpoints;
+    
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
@@ -63,11 +72,16 @@ public class WebSecurityConfig {
         http.csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> 
-                auth.requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/test/**").permitAll()
-                    .anyRequest().authenticated()
-            );
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers("/api/auth/**").permitAll();
+                
+                // Only permit test endpoints if explicitly configured (dev environment only)
+                if (permitTestEndpoints) {
+                    auth.requestMatchers("/api/test/**").permitAll();
+                }
+                
+                auth.anyRequest().authenticated();
+            });
         
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -78,7 +92,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Allow your React app origin
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
